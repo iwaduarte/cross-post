@@ -50,7 +50,7 @@ const getTagsId = () => {
 function postToHashnode({ title, markdownBody, canonicalURL, mainImage, tags = [], shouldPublish }) {
   const data = {
     input: {
-      // title,
+      title,
       contentMarkdown: markdownBody,
       isPartOfPublication: { publicationId },
       //using existing tags
