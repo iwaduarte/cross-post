@@ -1,7 +1,7 @@
 const axios = require('axios');
-const Conf = require('conf');
+const Configuration = require('conf');
 
-const configstore = new Conf();
+const configstore = new Configuration();
 
 /**
  * Post article to dev.to
@@ -18,7 +18,7 @@ function postToDev(title, bodyMarkdown, canonicalUrl, mainImage, published, cb =
     title,
     published,
     body_markdown: bodyMarkdown,
-    canonical_url: canonicalUrl,
+    canonical_url: canonicalUrl
   };
   if (mainImage) {
     article.main_image = mainImage;
@@ -27,26 +27,15 @@ function postToDev(title, bodyMarkdown, canonicalUrl, mainImage, published, cb =
   return axios.post(
     'https://dev.to/api/articles',
     {
-      article,
+      article
     },
     {
       headers: {
-        'api-key': configstore.get('dev').apiKey,
-      },
-    },
-  ).then((devReponse) => {
-    if (cb) {
-      cb({
-        success: true, url: devReponse.data.url + (published ? '' : '/edit'), platform: 'DEV', public: published,
-      });
+        Accept: 'application/vnd.forem.api-v1+json',
+        'api-key': configstore.get('dev').apiKey
+      }
     }
-  }).catch((err) => {
-    if (cb) {
-      cb({ success: false });
-    }
-    throw new Error(err.response ? `Error occured while cross posting to DEV: ${err.response.data.error}`
-      : 'An error occurred, please try again later');
-  });
+  );
 }
 
 module.exports = postToDev;
