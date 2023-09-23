@@ -2,7 +2,7 @@ const chalk = require('chalk');
 const { get } = require('axios');
 const { JSDOM } = require('jsdom');
 
-const allowedPlatforms = ['dev', 'hashnode', 'medium'];
+const allowedPlatforms = { dev: true, hashnode: true, medium: true };
 
 /**
  * Replaces the 'http' scheme with 'https' in a given URL.
@@ -16,19 +16,21 @@ const allowedPlatforms = ['dev', 'hashnode', 'medium'];
  * const url = "http://example.com";
  * const httpsUrl = enforceHTTPS(url);  // Output will be "https://example.com"
  */
-const enforceHTTPS = (url) => url?.replace(/^(http:\/\/)/, 'https://');
+const enforceHTTPS = url => url?.replace(/^(http:\/\/)/, 'https://');
 
+const prefixUrl = (baseUrl, url) =>
+  enforceHTTPS(!url.startsWith('http://') && !url.startsWith('https://') ? baseUrl + url : url);
 /**
  * Fetches the HTML content from a remote URL and returns it as a JSDOM object.
  *
  * @async
  * @function
- * @name getRemoteArticleDOM
+ * @name getRemoteDOM
  * @param {string} url - The URL of the remote article to fetch.
  * @returns {Promise<JSDOM>} - A promise that resolves to a JSDOM object containing
  * the HTML content of the remote article.
  */
-const getRemoteArticleDOM = async (url) => {
+const getRemoteDOM = async url => {
   const { data } = await get(enforceHTTPS(url));
   return new JSDOM(data);
 };
@@ -50,7 +52,7 @@ const getRemoteArticleDOM = async (url) => {
  *
  * // commonAncestor will contain the nearest common ancestor HTMLElement or null.
  */
-const findNearestCommonAncestor = (elements) => {
+const findNearestCommonAncestor = elements => {
   if (elements?.length === 0) {
     return null;
   }
@@ -60,14 +62,16 @@ const findNearestCommonAncestor = (elements) => {
       findAncestors(element.parentElement, ancestorsSet);
     }
   };
-  const ancestorsList = elements.map((element) => {
+  const ancestorsList = elements.map(element => {
     const ancestors = new Set();
     findAncestors(element, ancestors);
     return ancestors;
   });
 
-  const commonAncestors = ancestorsList.reduce((acc, currSet) => acc
-    .filter((ancestor) => currSet.has(ancestor)), [...ancestorsList[0]]);
+  const commonAncestors = ancestorsList.reduce(
+    (acc, currSet) => acc.filter(ancestor => currSet.has(ancestor)),
+    [...ancestorsList[0]]
+  );
 
   return commonAncestors[0] || null;
 };
@@ -82,7 +86,7 @@ const findNearestCommonAncestor = (elements) => {
  * @returns {HTMLElement[]} - An array of the top 20 HTMLElements that contain a `<p>` tag.
  *
  */
-const rankingTag = (document) => {
+const rankingTag = document => {
   const elements = document.querySelectorAll('p, blockquote, h1, h2, h3, h4, h5, h6');
   const scoreTag = {
     p: 0.8,
@@ -92,7 +96,7 @@ const rankingTag = (document) => {
     h3: 0.6,
     h4: 0.6,
     h5: 0.6,
-    h6: 0.6,
+    h6: 0.6
   };
 
   const { elementScores, elementHasPTag } = Array.from(elements).reduce(
@@ -122,7 +126,7 @@ const rankingTag = (document) => {
 
       return acc;
     },
-    { elementScores: new Map(), elementHasPTag: new Map() },
+    { elementScores: new Map(), elementHasPTag: new Map() }
   );
 
   return Array.from(elementScores.entries())
@@ -131,7 +135,7 @@ const rankingTag = (document) => {
     .slice(0, 20)
     .map(([element]) => element);
 };
-const findMainContentElements = (document) => findNearestCommonAncestor(rankingTag(document));
+const findMainContentElements = document => findNearestCommonAncestor(rankingTag(document));
 
 /**
  * Formats Markdown images within the provided Markdown string.
@@ -157,27 +161,34 @@ const formatMarkdownImages = (markdown, element, url) => {
 
   const baseUrl = formattedUrl.toString();
 
-  const prefixUrl = (URL) => enforceHTTPS(!URL.startsWith('http://') && !URL.startsWith('https://') ? baseUrl + URL : URL);
+  const imagesSrc = Array.from(element.querySelectorAll('img, picture'))
+    .map(HTMLImage => {
+      const { src, tagName } = HTMLImage || {};
 
-  const imagesSrc = Array.from(element.querySelectorAll('img, picture')).map((HTMLImage) => {
-    const { src, tagName } = HTMLImage || {};
+      if (tagName.toLowerCase() === 'img') return src ? prefixUrl(baseUrl, src) : null;
+      if (tagName.toLowerCase() === 'picture') {
+        const { srcset } = HTMLImage.querySelector('source') || {};
+        const srcsetItems = srcset.split(',');
+        if (srcset) return prefixUrl(baseUrl, srcsetItems[srcsetItems.length - 1].trim().split(' ')[0]);
+      }
+      return null;
+    })
+    .filter(Boolean);
 
-    if (tagName.toLowerCase() === 'img') return src ? prefixUrl(src) : null;
-    if (tagName.toLowerCase() === 'picture') {
-      const { srcset } = HTMLImage.querySelector('source') || {};
-      const srcsetItems = srcset.split(',');
-      if (srcset) return prefixUrl(srcsetItems[srcsetItems.length - 1].trim().split(' ')[0]);
-    }
-    return null;
-  }).filter(Boolean);
+  if (url.includes('medium.com')) {
+    imagesSrc.shift();
+  } // first image is always the profile image
 
-  if (url.includes('medium.com')) { imagesSrc.shift(); } // first image is always the profile image
+  const [firstImage] = imagesSrc;
 
   const GRAB_IMAGES_MARKDOWN_REGEX = /!\[(.*?)]\((.*?)\)/g;
-  return markdown.replace(GRAB_IMAGES_MARKDOWN_REGEX, (match, p1, p2) => {
-    const newUrl = imagesSrc.shift() || p2;
-    return `![${p1}](${newUrl})`;
-  });
+  return [
+    markdown.replace(GRAB_IMAGES_MARKDOWN_REGEX, (match, p1, p2) => {
+      const newUrl = imagesSrc.shift() || p2;
+      return `![${p1}](${newUrl})`;
+    }),
+    firstImage
+  ];
 };
 
 module.exports = {
@@ -185,20 +196,8 @@ module.exports = {
   displayError: chalk.bold.red,
   displaySuccess: chalk.bold.green,
   displayInfo: chalk.bold.blue,
-  isPlatformAllowed(platform, config = false) {
-    if (config) {
-      return allowedPlatforms.includes(platform) || module.exports.imagePlatform === platform
-                || platform === 'imageSelector' || platform === 'selector';
-    }
-    return allowedPlatforms.includes(platform);
-  },
-  platformNotAllowedMessage: `Platforms specified are not all allowed. Allowed platform values are: ${allowedPlatforms.join(', ')}`,
-  isDataURL(s) {
-    const regex = /^data:((?:\w+\/(?:(?!;).)+)?)((?:;[\w\W]*?[^;])*),(.+)$/i;
-    return !!s.match(regex);
-  },
-  imagePlatform: 'cloudinary',
   findMainContentElements,
-  getRemoteArticleDOM,
+  getRemoteDOM,
   formatMarkdownImages,
+  prefixUrl
 };
