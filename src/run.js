@@ -16,7 +16,9 @@ const {
   getRemoteDOM,
   findMainContentElements,
   formatMarkdownImages,
-  prefixUrl
+  checkIfURLorPath,
+  getFileMarkdown,
+  getImages
 } = require('./utils');
 
 const postToDev = require('./platforms/devto');
@@ -43,23 +45,52 @@ const platformMap = {
   hashnode: postToHashnode
 };
 
-const postToPlatforms = async (title, markdown, url, image, shouldPublish, platforms) => {
+const postToPlatforms = async ({
+  title,
+  markdown,
+  canonicalURL,
+  mainImage,
+  tags,
+  shouldPublish,
+  platforms,
+  markdownBody
+}) => {
   await Promise.all(
-    platforms.map(platform => {
+    platforms?.map(platform => {
       loading.message(`Posting article to ${platform}`);
-      return platformMap[platform](title, markdown, url, image, shouldPublish)
-        .then(() =>
+      return platformMap[platform]({
+        title,
+        markdown,
+        markdownBody,
+        canonicalURL,
+        mainImage,
+        tags,
+        shouldPublish
+      })
+        .then(() => {
           console.log(
-            displaySuccess(`Article ${shouldPublish ? 'published' : 'added to drafts'} on ${platform} at ${url}`)
-          )
-        )
+            displaySuccess(` \nArticle ${title} ${shouldPublish ? 'published' : 'drafted'} on ${platform}`)
+          );
+        })
         .catch(err => {
+          // console.log(err.config.data);
+          console.log(err);
           const {
             response: { data }
           } = err;
+          const { status, error, errors } = data || {};
+
+          const errorMessage =
+            error ||
+            errors?.[0]?.message
+              ?.substring(errors[0].message.lastIndexOf('};'))
+              .replace(/^[^a-zA-Z0-9]+/, '') ||
+            `Some error occurred with ${platform}`;
+          const statusMessage = status ? `[HTTP_STATUS: ${data.status}]` : '';
+
           handleError(
             new Error(
-              `An error occurred while cross posting to [${platform}]: \n[HTTP_STATUS: ${data.status}]\n - ${data.error}`
+              `An error occurred while cross posting to [${platform}]: \n${statusMessage}\n - ${errorMessage}`
             )
           );
         });
@@ -69,75 +100,79 @@ const postToPlatforms = async (title, markdown, url, image, shouldPublish, platf
   process.exit();
 };
 
-const checkIfURLorPath = urlOrPath => {
-  if (
-    //google.(md|mdx) valid domain and potential markdown file
-    (urlOrPath.endsWith(`.md`) || urlOrPath.endsWith(`.mdx`)) &&
-    fs.existsSync(path.resolve(process.cwd(), urlOrPath))
-  ) {
-    return [urlOrPath, false];
-  }
-  try {
-    const formattedUL = prefixUrl(urlOrPath, 'https://');
-    new URL(formattedUL);
-    return [formattedUL, true];
-  } catch (err) {
-    return [urlOrPath, false];
-  }
-};
-
-const getFileMarkdown = async markdownPath => {
-  // publish from a local file
-  const filePath = path.resolve(process.cwd(), markdownPath);
-  if (path.extname(filePath).toLowerCase().indexOf('md') === -1) {
-    handleError('File extension not allowed. Only markdown files are accepted');
-    return;
-  }
-  return fs.readFileSync(filePath, 'utf-8');
-};
-
 /**
  *
  * @param {string} cliURLorPath URL of the blog post
  * @param {object} options The parameters from the command line
  */
 async function run(cliURLorPath, options) {
-  const { title, imageUrl, canonicalUrl, platforms: userPlatforms, publish = false } = options;
+  const {
+    title: optTitle,
+    imageUrl,
+    canonicalUrl: optCanonicalUrl,
+    tags: optTags,
+    platforms: optPlatforms,
+    publish: shouldPublish = false,
+    skipImage
+  } = options;
 
   loading.start();
 
-  const platforms = userPlatforms
+  const platforms = optPlatforms
     .map(platform => allowedPlatforms[platform] && configstore.get(platform) && platform)
     .filter(Boolean);
 
   if (!platforms.length) {
-    return console.error(displayError(`Invalid platforms: ${userPlatforms}`));
+    return console.error(displayError(`Invalid platforms: ${optPlatforms}`));
   }
 
   const [urlOrPath, isURL] = checkIfURLorPath(cliURLorPath);
   const localMarkdown = !isURL && (await getFileMarkdown(urlOrPath));
 
   const content = !isURL ? frontmatter(localMarkdown) : {};
-  const { attributes: { canonical_url: fmCanonicalUrl, main_image: mainImage, title: fmTitle } = {} } = content || {};
-  const remoteURL = isURL ? urlOrPath : canonicalUrl || fmCanonicalUrl;
-  const remoteDOM = await getRemoteDOM(remoteURL);
-  const document = remoteDOM.window.document;
+  const {
+    attributes: { canonical_url: fmCanonicalUrl, main_image: fmMainImage, title: fmTitle, tags: fmTags } = {},
+    body: _markdownBody
+  } = content || {};
+  const remoteURL = isURL ? urlOrPath : optCanonicalUrl || fmCanonicalUrl;
+  const remoteDOM = !!remoteURL && (await getRemoteDOM(remoteURL));
+  const document = remoteDOM?.window.document;
 
-  const _title = title || fmTitle || document.title;
-  const _canonicalURL = isURL ? urlOrPath : canonicalUrl || fmCanonicalUrl;
+  const title = optTitle || fmTitle || document?.title;
+  const canonicalURL = isURL ? urlOrPath : optCanonicalUrl || fmCanonicalUrl;
+  const tags = optTags || fmTags;
 
-  const mainElement = findMainContentElements(document.body);
-  const [markdownFormatted, firstImage] = !isURL ? formatMarkdownImages(localMarkdown, mainElement, _canonicalURL) : [];
-  const markdown = !isURL ? markdownFormatted : turndownService.turndown(mainElement);
+  const mainElement = !!document && findMainContentElements(document?.body);
+  const [markdownFormatted, firstImage] = !isURL
+    ? formatMarkdownImages(localMarkdown, mainElement, canonicalURL)
+    : [];
+  const remoteMarkdown = mainElement && turndownService.turndown(mainElement);
 
-  const _image = imageUrl || mainImage || firstImage;
+  const markdown = !isURL ? markdownFormatted : remoteMarkdown;
+  const [markdownBody] = !isURL
+    ? formatMarkdownImages(_markdownBody, mainElement, canonicalURL)
+    : [remoteMarkdown, getImages(mainElement, canonicalURL)[0]];
 
-  console.log(displaySuccess('\n\ntitle:', _title));
-  console.log(displaySuccess('canonicalURL:', _canonicalURL));
-  console.log(displaySuccess('image:', _image));
-  console.log(displaySuccess('platforms:', platforms), `\n`);
+  const mainImage = skipImage ? false : imageUrl || fmMainImage || firstImage;
 
-  await postToPlatforms(_title, markdown, _canonicalURL, _image, publish, platforms);
+  console.log(displaySuccess('\n\ntitle:', title));
+  console.log(displaySuccess('canonicalURL:', canonicalURL));
+  console.log(displaySuccess('image:', mainImage));
+  console.log(displaySuccess('tags:', tags));
+  console.log(displaySuccess('platforms:', platforms));
+  console.log(displaySuccess('skipImage:', skipImage));
+  console.log(displaySuccess('shouldPublish:', shouldPublish), `\n`);
+
+  await postToPlatforms({
+    title,
+    markdown,
+    markdownBody,
+    canonicalURL,
+    mainImage,
+    shouldPublish,
+    platforms,
+    tags
+  });
 }
 
 module.exports = run;
