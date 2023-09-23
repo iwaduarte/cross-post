@@ -1,6 +1,8 @@
 const chalk = require('chalk');
 const { get } = require('axios');
 const { JSDOM } = require('jsdom');
+const fs = require('fs');
+const path = require('path');
 
 const allowedPlatforms = { dev: true, hashnode: true, medium: true };
 
@@ -20,6 +22,33 @@ const enforceHTTPS = url => url?.replace(/^(http:\/\/)/, 'https://');
 
 const prefixUrl = (baseUrl, url) =>
   enforceHTTPS(!url.startsWith('http://') && !url.startsWith('https://') ? baseUrl + url : url);
+const checkIfURLorPath = urlOrPath => {
+  if (
+    //google.(md|mdx) valid domain and potential markdown file
+    (urlOrPath.endsWith(`.md`) || urlOrPath.endsWith(`.mdx`)) &&
+    fs.existsSync(path.resolve(process.cwd(), urlOrPath))
+  ) {
+    return [urlOrPath, false];
+  }
+  try {
+    const formattedUL = prefixUrl(urlOrPath, 'https://');
+    new URL(formattedUL);
+    return [formattedUL, true];
+  } catch (err) {
+    return [urlOrPath, false];
+  }
+};
+
+const getFileMarkdown = async markdownPath => {
+  // publish from a local file
+  const filePath = path.resolve(process.cwd(), markdownPath);
+  if (path.extname(filePath).toLowerCase().indexOf('md') === -1) {
+    handleError('File extension not allowed. Only markdown files are accepted');
+    return;
+  }
+  return fs.readFileSync(filePath, 'utf-8');
+};
+
 /**
  * Fetches the HTML content from a remote URL and returns it as a JSDOM object.
  *
@@ -137,23 +166,9 @@ const rankingTag = document => {
 };
 const findMainContentElements = document => findNearestCommonAncestor(rankingTag(document));
 
-/**
- * Formats Markdown images within the provided Markdown string.
- *
- * @function
- * @name formatMarkdownImages
- * @param {string} markdown - The Markdown text that needs to be formatted.
- * @param {HTMLElement} element - The HTMLElement (from jsdom) where images will be extracted.
- * @param {string} url - The URL to be used for setting the images absolute path
- * @returns {string} - The formatted Markdown string.
- *
- * @example
- * const markdown = "![Alt text](/path/to/image.jpg)";
- * const element = new jsdom.window.HTMLElement('body');
- * const url = "https://example.com";
- * const result = '![Alt text](https://example.com/imagefromElement.png)'
- */
-const formatMarkdownImages = (markdown, element, url) => {
+const getImages = (element, url) => {
+  if (!element || !url) return null;
+
   const formattedUrl = new URL(url);
   formattedUrl.pathname = '';
   formattedUrl.search = '';
@@ -178,9 +193,30 @@ const formatMarkdownImages = (markdown, element, url) => {
   if (url.includes('medium.com')) {
     imagesSrc.shift();
   } // first image is always the profile image
+  return imagesSrc;
+};
 
+/**
+ * Formats Markdown images within the provided Markdown string.
+ *
+ * @function
+ * @name formatMarkdownImages
+ * @param {string} markdown - The Markdown text that needs to be formatted.
+ * @param {HTMLElement} element - The HTMLElement (from jsdom) where images will be extracted.
+ * @param {string} url - The URL to be used for setting the images absolute path
+ * @returns {string[]} - The formatted Markdown string.
+ *
+ * @example
+ * const markdown = "![Alt text](/path/to/image.jpg)";
+ * const element = new jsdom.window.HTMLElement('body');
+ * const url = "https://example.com";
+ * const result = '![Alt text](https://example.com/imagefromElement.png)'
+ */
+const formatMarkdownImages = (markdown, element, url) => {
+  if (!element) return [markdown, null];
+
+  const imagesSrc = getImages(element, url);
   const [firstImage] = imagesSrc;
-
   const GRAB_IMAGES_MARKDOWN_REGEX = /!\[(.*?)]\((.*?)\)/g;
   return [
     markdown.replace(GRAB_IMAGES_MARKDOWN_REGEX, (match, p1, p2) => {
@@ -199,5 +235,8 @@ module.exports = {
   findMainContentElements,
   getRemoteDOM,
   formatMarkdownImages,
-  prefixUrl
+  prefixUrl,
+  checkIfURLorPath,
+  getFileMarkdown,
+  getImages
 };
