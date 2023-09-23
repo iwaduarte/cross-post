@@ -26,16 +26,16 @@ const formatMarkdownForDev = () => {};
  * Post article to dev.to
  *
  * @param {string} title Title of article
- * @param {string} bodyMarkdown Content of the article in markdown
+ * @param {string} markdown Content of the article in markdown
  * @param {string} canonicalUrl URL of original article
  * @param {string} mainImage Cover image URL
  * @param {boolean} published whether to publish as draft or public
  */
-function postToDev(title, bodyMarkdown, canonicalUrl, mainImage, published) {
+function postToDev({ title, markdown, canonicalUrl, mainImage, published }) {
   const article = {
     title,
     published,
-    body_markdown: bodyMarkdown,
+    body_markdown: markdown,
     canonical_url: canonicalUrl
   };
   if (mainImage) {
