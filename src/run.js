@@ -1,5 +1,3 @@
-const fs = require('fs');
-const path = require('path');
 const Conf = require('conf');
 const frontmatter = require('front-matter');
 const { Spinner } = require('clui');
