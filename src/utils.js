@@ -69,7 +69,7 @@ const getFileMarkdown = async markdownPath => {
  */
 const getRemoteDOM = async url => {
   const { data } = await get(enforceHTTPS(url));
-  return new JSDOM(data, { resources: 'usable' });
+  return new JSDOM(data, { resources: 'usable', url });
 };
 
 const getImages = (element, url) => {
@@ -102,44 +102,12 @@ const getImages = (element, url) => {
   return imagesSrc;
 };
 
-/**
- * Formats Markdown images within the provided Markdown string.
- *
- * @function
- * @name formatMarkdownImages
- * @param {string} markdown - The Markdown text that needs to be formatted.
- * @param {HTMLElement} element - The HTMLElement (from jsdom) where images will be extracted.
- * @param {string} url - The URL to be used for setting the images absolute path
- * @returns {string[]} - The formatted Markdown string.
- *
- * @example
- * const markdown = "![Alt text](/path/to/image.jpg)";
- * const element = new jsdom.window.HTMLElement('body');
- * const url = "https://example.com";
- * const result = '![Alt text](https://example.com/imagefromElement.png)'
- */
-const formatMarkdownImages = (markdown, element, url) => {
-  if (!element) return [markdown, null];
-
-  const imagesSrc = getImages(element, url);
-  const [firstImage] = imagesSrc;
-  const GRAB_IMAGES_MARKDOWN_REGEX = /!\[(.*?)]\((.*?)\)/g;
-  return [
-    markdown.replace(GRAB_IMAGES_MARKDOWN_REGEX, (match, p1, p2) => {
-      const newUrl = imagesSrc.shift() || p2;
-      return `![${p1}](${newUrl})`;
-    }),
-    firstImage
-  ];
-};
-
 module.exports = {
   allowedPlatforms,
   displayError: chalk.bold.red,
   displaySuccess: chalk.bold.green,
   displayInfo: chalk.bold.blue,
   getRemoteDOM,
-  formatMarkdownImages,
   prefixUrl,
   checkIfURLorPath,
   getFileMarkdown,
