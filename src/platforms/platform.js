@@ -21,7 +21,6 @@ const postToPlatforms = async ({
 }) => {
   await Promise.all(
     platforms?.map(platform => {
-      loading.message(`Posting article to ${platform}`);
       return platformMap[platform]({
         title,
         markdown,
