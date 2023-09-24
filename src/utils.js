@@ -31,20 +31,28 @@ const checkIfURLorPath = urlOrPath => {
     return [urlOrPath, false];
   }
   try {
-    const formattedUL = prefixUrl(urlOrPath, 'https://');
+    const formattedUL = prefixUrl('https://', urlOrPath);
+    console.log(formattedUL);
     new URL(formattedUL);
     return [formattedUL, true];
   } catch (err) {
     return [urlOrPath, false];
   }
 };
+/**
+ *
+ * @param {Error} err Error message to display
+ */
+const handleError = err => {
+  console.error(chalk.bold.red(err));
+  process.exit();
+};
 
 const getFileMarkdown = async markdownPath => {
   // publish from a local file
   const filePath = path.resolve(process.cwd(), markdownPath);
   if (path.extname(filePath).toLowerCase().indexOf('md') === -1) {
-    handleError('File extension not allowed. Only markdown files are accepted');
-    return;
+    return handleError(new Error('File extension not allowed. Only markdown files are accepted'));
   }
   return fs.readFileSync(filePath, 'utf-8');
 };
@@ -61,110 +69,8 @@ const getFileMarkdown = async markdownPath => {
  */
 const getRemoteDOM = async url => {
   const { data } = await get(enforceHTTPS(url));
-  return new JSDOM(data);
+  return new JSDOM(data, { resources: 'usable' });
 };
-
-/**
- * Finds the nearest common ancestor of an array of HTML elements.
- *
- * @function
- * @name findNearestCommonAncestor
- * @param {HTMLElement[]} elements - An array of HTML elements for which to find
- * the nearest common ancestor.
- * @returns {HTMLElement|null} - The nearest common ancestor element, or null
- * if the input array is empty or null.
- *
- * @example
- * const elem1 = document.getElementById('elem1');
- * const elem2 = document.getElementById('elem2');
- * const commonAncestor = findNearestCommonAncestor([elem1, elem2]);
- *
- * // commonAncestor will contain the nearest common ancestor HTMLElement or null.
- */
-const findNearestCommonAncestor = elements => {
-  if (elements?.length === 0) {
-    return null;
-  }
-  const findAncestors = (element, ancestorsSet) => {
-    if (element) {
-      ancestorsSet.add(element);
-      findAncestors(element.parentElement, ancestorsSet);
-    }
-  };
-  const ancestorsList = elements.map(element => {
-    const ancestors = new Set();
-    findAncestors(element, ancestors);
-    return ancestors;
-  });
-
-  const commonAncestors = ancestorsList.reduce(
-    (acc, currSet) => acc.filter(ancestor => currSet.has(ancestor)),
-    [...ancestorsList[0]]
-  );
-
-  return commonAncestors[0] || null;
-};
-
-/**
- * Ranks HTML elements based on how many text density it has
- * and returns the top 20 elements that contain a `<p>` tag.
- *
- * @function
- * @name rankingTag
- * @param {HTMLElement} document - The HTML jsdom element representing the root of the document.
- * @returns {HTMLElement[]} - An array of the top 20 HTMLElements that contain a `<p>` tag.
- *
- */
-const rankingTag = document => {
-  const elements = document.querySelectorAll('p, blockquote, h1, h2, h3, h4, h5, h6');
-  const scoreTag = {
-    p: 0.8,
-    blockquote: 0.9,
-    h1: 0.6,
-    h2: 0.6,
-    h3: 0.6,
-    h4: 0.6,
-    h5: 0.6,
-    h6: 0.6
-  };
-
-  const { elementScores, elementHasPTag } = Array.from(elements).reduce(
-    (acc, element) => {
-      const textLength = element.textContent.length;
-      const tagName = element.tagName.toLowerCase();
-
-      if (tagName.includes('-')) {
-        return acc;
-      }
-
-      const scoreMultiplier = scoreTag[tagName];
-      const score = textLength * scoreMultiplier;
-      const { parentElement } = element;
-
-      if (parentElement && !parentElement.tagName.toLowerCase().includes('-')) {
-        if (acc.elementScores.has(parentElement)) {
-          acc.elementScores.set(parentElement, acc.elementScores.get(parentElement) + score);
-        } else {
-          acc.elementScores.set(parentElement, score);
-        }
-
-        if (tagName === 'p') {
-          acc.elementHasPTag.set(parentElement, true);
-        }
-      }
-
-      return acc;
-    },
-    { elementScores: new Map(), elementHasPTag: new Map() }
-  );
-
-  return Array.from(elementScores.entries())
-    .filter(([parentElement]) => elementHasPTag.has(parentElement))
-    .sort(([, scoreA], [, scoreB]) => scoreB - scoreA)
-    .slice(0, 20)
-    .map(([element]) => element);
-};
-const findMainContentElements = document => findNearestCommonAncestor(rankingTag(document));
 
 const getImages = (element, url) => {
   if (!element || !url) return null;
@@ -232,11 +138,11 @@ module.exports = {
   displayError: chalk.bold.red,
   displaySuccess: chalk.bold.green,
   displayInfo: chalk.bold.blue,
-  findMainContentElements,
   getRemoteDOM,
   formatMarkdownImages,
   prefixUrl,
   checkIfURLorPath,
   getFileMarkdown,
-  getImages
+  getImages,
+  handleError
 };
