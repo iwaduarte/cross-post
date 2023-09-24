@@ -1,7 +1,16 @@
 const listSelectors = {
-  'medium.com': 'article medium',
-  'hashnode.com': '#post-content-parent',
-  'dev.com': '.crayons-article__main'
+  'medium.com': {
+    selector: 'article section div',
+    remove: document => {
+      const pageTitle = document?.title;
+      const allTitles = Array.from(document?.querySelectorAll('h1'));
+      const removeElement = allTitles?.find(title => pageTitle.includes(title.textContent));
+      removeElement.parentNode.parentNode.removeChild(removeElement.parentNode);
+      return true;
+    }
+  },
+  'hashnode.com': { selector: '#post-content-parent' },
+  'dev.com': { selector: '.crayons-article__main' }
 };
 
 /**
@@ -104,10 +113,19 @@ const rankingTags = document => {
     .slice(0, 4)
     .map(([element]) => element);
 };
-const findContent = (element, selector) => element.querySelector(selector);
-const findMainContentElements = document => {
-  const selector = listSelectors[document.location.host.replace(/^www./, '')];
-  if (selector) return findContent(document, selector);
+const findContent = (element, selector, remove) => {
+  const mainElement = element.querySelector(selector);
+  if (remove) {
+    remove(element);
+  }
+  return mainElement;
+};
+const findMainContentElements = (document, url) => {
+  const platformRules = listSelectors[new URL(url).host.replace(/^www./, '')];
+  const { selector, remove } = platformRules || {};
+
+  if (selector) return findContent(document, selector, remove);
+
   return findNearestCommonAncestor(rankingTags(document));
 };
 
