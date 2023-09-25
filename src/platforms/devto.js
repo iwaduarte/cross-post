@@ -31,10 +31,10 @@ const formatMarkdownForDev = () => {};
  * @param {string} mainImage Cover image URL
  * @param {boolean} published whether to publish as draft or public
  */
-function postToDev({ title, markdown, canonicalURL, mainImage, published }) {
+function postToDev({ title, markdown, canonicalURL, mainImage, shouldPublish }) {
   const article = {
     title,
-    published,
+    published: shouldPublish,
     body_markdown: markdown,
     canonical_url: canonicalURL,
     ...(mainImage ? { main_image: mainImage } : {})
