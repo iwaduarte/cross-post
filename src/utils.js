@@ -21,7 +21,9 @@ const allowedPlatforms = { dev: true, hashnode: true, medium: true };
 const enforceHTTPS = url => url?.replace(/^(http:\/\/)/, 'https://');
 
 const prefixUrl = (baseUrl, url) =>
-  enforceHTTPS(!url.startsWith('http://') && !url.startsWith('https://') ? baseUrl + url : url);
+  enforceHTTPS(
+    !url.startsWith('http://') && !url.startsWith('https://') ? new URL(url, baseUrl).toString() : url
+  );
 const checkIfURLorPath = urlOrPath => {
   const _path = path.resolve(process.cwd(), urlOrPath);
   if (
@@ -69,7 +71,7 @@ const getFileMarkdown = async markdownPath => {
  */
 const getRemoteDOM = async url => {
   const { data } = await get(enforceHTTPS(url));
-  return new JSDOM(data, { resources: 'usable', url });
+  return new JSDOM(data);
 };
 
 const getImages = (element, url) => {
