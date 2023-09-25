@@ -8,6 +8,13 @@ const turndownService = new TurndownService({
 turndownService.keep(['figure', 'iframe']);
 turndownService.use(gfm);
 
+// turndownService.addRule('figure', {
+//   filter: 'figure',
+//   replacement: function (content, node, options) {
+//     return '![](' + node.getAttribute('data-src') + ')';
+// }
+// });
+
 const markdownToHTML = element => element && turndownService.turndown(element);
 /**
  * Formats Markdown images within the provided Markdown string.
