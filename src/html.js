@@ -2,15 +2,22 @@ const listSelectors = {
   'medium.com': {
     selector: 'article section div',
     remove: document => {
-      const pageTitle = document?.title;
-      const allTitles = Array.from(document?.querySelectorAll('h1'));
-      const removeElement = allTitles?.find(title => pageTitle.includes(title.textContent));
+      const removeElement = document?.querySelector('.pw-post-title');
+      const remove2ndElement = document?.querySelector('.pw-subtitle-paragraph');
       removeElement.parentNode.parentNode.removeChild(removeElement.parentNode);
+      remove2ndElement?.parentNode?.parentNode?.removeChild(remove2ndElement.parentNode);
       return true;
     }
   },
   'hashnode.com': { selector: '#post-content-parent' },
   'dev.com': { selector: '.crayons-article__main' }
+};
+const findContent = (element, selector, remove) => {
+  const mainElement = element.querySelector(selector);
+  if (remove) {
+    remove(element);
+  }
+  return mainElement;
 };
 
 /**
@@ -28,7 +35,7 @@ const listSelectors = {
  * const elem2 = document.getElementById('elem2');
  * const commonAncestor = findNearestCommonAncestor([elem1, elem2]);
  *
- * // commonAncestor will contain the nearest common ancestor HTMLElement or null.
+ * commonAncestor will contain the nearest common ancestor HTMLElement or null.
  */
 const findNearestCommonAncestor = elements => {
   if (elements?.length === 0) {
@@ -112,13 +119,6 @@ const rankingTags = document => {
     .sort(([, scoreA], [, scoreB]) => scoreB - scoreA)
     .slice(0, 4)
     .map(([element]) => element);
-};
-const findContent = (element, selector, remove) => {
-  const mainElement = element.querySelector(selector);
-  if (remove) {
-    remove(element);
-  }
-  return mainElement;
 };
 const findMainContentElements = (document, url) => {
   const platformRules = listSelectors[new URL(url).host.replace(/^www./, '')];
