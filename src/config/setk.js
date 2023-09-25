@@ -1,5 +1,5 @@
 const inquirer = require('inquirer');
-const { displayInfo, displayError, displaySuccess } = require('../utils');
+const { displayInfo, displayError } = require('../utils');
 const { config: configDev } = require('./dev');
 const { config: configHashnode } = require('./hashnode');
 const { config: configMedium } = require('./medium');

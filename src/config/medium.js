@@ -1,5 +1,5 @@
 const { default: axios } = require('axios');
-const { displayError, displayInfo, displaySuccess } = require('../utils');
+const { displayError, displaySuccess } = require('../utils');
 const configstore = require('../config-store');
 
 const getUserId = authKey =>
