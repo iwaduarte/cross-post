@@ -73,12 +73,13 @@ To even more customization cross post your articles, you will use the following 
     cross-post <url> -p dev hashnode
     ```
 2. `-t, --title [title]` The title by default will be taken from the URL you supplied, however, if you want to use a different title you can supply it in this option.
-3. `-cnu, --canonical-url [canonicalUrl]` Original url the article was published first. It is mandatory for SEO
-4. `-pu, --public` by default, the article will be posted as a draft (or hidden for hashnode due to the limitations of the Hashnode API). You can pass this option to post it publicly.
-5. `-i, --ignore-image` this will ignore uploading an image with the article. This helps avoid errors when an image cannot be fetched.
-6. `-is, --image-selector [imageSelector]` this will select the image from the page based on the selector you provide, instead of the first image inside the article. This option overrides the default image selector in the configurations.
-7. `-iu, --image-url [imageUrl]` this will use the image URL you provide as a value of the option and will not look for any image inside the article.
-8. `-ts, --title-selector [titleSelector]` this will select the title from the page based on the selector you provide, instead of the first heading inside the article. This option overrides the default title selector in the configurations.
+3. `-tg, --tags <tags...>` Tags for the article
+4. `-c, --canonical-url [canonicalUrl]` Original url the article was published first. It is mandatory for SEO
+5. `-i, --image-url [imageUrl]` this will use the image URL you provide as a value for main cover inside your post.
+6. `-si, --skip-image` Skip image main cover.
+7. `-pu, --public` by default, the article will be posted as a draft (or hidden for Hashnode). You can pass this option to post it publicly.
+
+
 
 
 # Configure Authorization
