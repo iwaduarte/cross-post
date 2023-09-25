@@ -29,7 +29,7 @@ async function run(cliURLorPath, options) {
     imageUrl,
     canonicalUrl: optCanonicalUrl,
     tags: optTags,
-    platforms: optPlatforms,
+    platforms: optPlatforms = ['dev', 'hashnode', 'medium'],
     publish: shouldPublish = false,
     skipImage
   } = options;
