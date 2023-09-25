@@ -32,7 +32,7 @@ const config = async response => {
   return getUserId(username, apiKey)
     .then(({ data }) => {
       const { user } = data?.data || {};
-      const { publication_id: publicationId } = user || {};
+      const { _id: publicationId } = user?.publication || {};
       if (!publicationId)
         return console.error(displayError(`An error occurred fetching additional data. Please try again`));
 
@@ -42,7 +42,7 @@ const config = async response => {
     .catch(err => {
       console.error(
         displayError(
-          `An error occurred while fetching publication Id: ${err.response.data.errors[0].message}`
+          `An error occurred while fetching publication ID: ${err.response.data.errors[0].message}`
         )
       );
     });
