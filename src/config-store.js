@@ -6,86 +6,50 @@ const CONFIG_SCHEMA = {
     properties: {
       apiKey: {
         type: 'string',
-        default: '',
-      },
-    },
+        default: ''
+      }
+    }
   },
   hashnode: {
     type: 'object',
     properties: {
       apiKey: {
         type: 'string',
-        default: '',
+        default: ''
       },
       username: {
         type: 'string',
-        default: '',
-      },
-    },
+        default: ''
+      }
+    }
   },
   medium: {
     type: 'object',
     properties: {
       integrationToken: {
         type: 'string',
-        default: '',
+        default: ''
       },
       authorId: {
         type: 'string',
-        default: '',
-      },
-    },
-  },
-  cloudinary: {
-    type: 'object',
-    properties: {
-      cloud_name: {
-        type: 'string',
-        default: '',
-      },
-      api_key: {
-        type: 'string',
-        default: '',
-      },
-      api_secret: {
-        type: 'string',
-        default: '',
-      },
-    },
-  },
-  imageSelector: {
-    type: 'string',
-    default: '',
-  },
-  titleSelector: {
-    type: 'string',
-    default: '',
-  },
-  selector: {
-    type: 'string',
-    default: '',
-  },
+        default: ''
+      }
+    }
+  }
 };
 const CONFIG_DEFAULTS = {
   dev: {
-    apiKey: '',
+    apiKey: ''
   },
   hashnode: {
     apiKey: '',
-    username: '',
+    username: ''
   },
   medium: {
     integrationToken: '',
-    authorId: '',
-  },
-  cloudinary: {
-    cloud_name: '',
-    api_key: '',
-    api_secret: '',
-  },
-  imageSelector: '',
-  titleSelector: '',
-  selector: '',
+    authorId: ''
+  }
 };
 const configstore = new Conf({ schema: CONFIG_SCHEMA, defaults: CONFIG_DEFAULTS });
+
 module.exports = configstore;
