@@ -1,8 +1,9 @@
 const axios = require('axios');
 const Configuration = require('conf');
 const { hashnodeTags } = require('./hashnodeTags');
+
 const store = new Configuration();
-const { publicationId, apiKey } = store.get('hashnode');
+const { publicationId, apiKey } = store.get('hashnode') || {};
 
 /** Format markdown to cater for specific hashnode rules:
  * Frontmatter
@@ -13,7 +14,8 @@ const { publicationId, apiKey } = store.get('hashnode');
  * -
  *
  * Embeds (Body transformation):
- *
+ * https://support.hashnode.com/en/articles/6420731-adding-embeds-to-your-blog-post
+ * %[content to embed URL]
  *
  */
 const formatMarkdownForHashnode = () => {};
