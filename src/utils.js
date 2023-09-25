@@ -23,16 +23,16 @@ const enforceHTTPS = url => url?.replace(/^(http:\/\/)/, 'https://');
 const prefixUrl = (baseUrl, url) =>
   enforceHTTPS(!url.startsWith('http://') && !url.startsWith('https://') ? baseUrl + url : url);
 const checkIfURLorPath = urlOrPath => {
+  const _path = path.resolve(process.cwd(), urlOrPath);
   if (
     //google.(md|mdx) valid domain and potential markdown file
     (urlOrPath.endsWith(`.md`) || urlOrPath.endsWith(`.mdx`)) &&
-    fs.existsSync(path.resolve(process.cwd(), urlOrPath))
+    fs.existsSync(_path)
   ) {
     return [urlOrPath, false];
   }
   try {
     const formattedUL = prefixUrl('https://', urlOrPath);
-    console.log(formattedUL);
     new URL(formattedUL);
     return [formattedUL, true];
   } catch (err) {
@@ -82,7 +82,7 @@ const getImages = (element, url) => {
 
   const baseUrl = formattedUrl.toString();
 
-  const imagesSrc = Array.from(element.querySelectorAll('img, picture'))
+  return Array.from(element.querySelectorAll('img, picture'))
     .map(HTMLImage => {
       const { src, tagName } = HTMLImage || {};
 
@@ -95,11 +95,6 @@ const getImages = (element, url) => {
       return null;
     })
     .filter(Boolean);
-
-  if (url.includes('medium.com')) {
-    imagesSrc.shift();
-  } // first image is always the profile image
-  return imagesSrc;
 };
 
 module.exports = {
