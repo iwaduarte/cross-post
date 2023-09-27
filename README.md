@@ -1,7 +1,9 @@
-# Cross Post
+# Crossposting
 
 [![GitHub license](https://img.shields.io/github/license/iwaduarte/cross-post)](./LICENSE) ![npm version](https://img.shields.io/npm/v/crossposting)
 
+
+![](./crossposting.webp)  
 Cross posting done right. Publish your article like a boss to Medium, Hashnode, and dev.to
 
 ## Installation
