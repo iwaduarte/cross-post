@@ -2,8 +2,8 @@
 
 [![GitHub license](https://img.shields.io/github/license/iwaduarte/cross-post)](./LICENSE) ![npm version](https://img.shields.io/npm/v/crossposting)
 
+<img src="https://github.com/iwaduarte/cross-post/raw/master/crossposting.webp" alt="Express Sire Logo" width="360" style="max-width: 100%;">  
 
-![](./crossposting.webp)  
 Cross posting done right. Publish your article like a boss to Medium, Hashnode, and dev.to
 
 ## Installation
