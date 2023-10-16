@@ -98,7 +98,7 @@ To even more customization cross post your articles, you will use the following 
    ```
 ### hashnode.com
 
-1. After logging into your account on dev.to.
+1. After logging into your account on hashnode.com.
 2. Go to https://hashnode.com/settings/developer
 3. Generate new token
    ```bash
@@ -107,7 +107,7 @@ To even more customization cross post your articles, you will use the following 
 
 ### medium.com
 
-1. After logging into your account on dev.to.
+1. After logging into your account on medium.com.
 2. Go to https://medium.com/me/settings/security
 3. Integration tokens (end of the page)
 4. Get token
